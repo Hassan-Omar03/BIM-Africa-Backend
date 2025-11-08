@@ -1,30 +1,26 @@
-import express from "express"; // if using ES Modules (or use require() with CommonJS)
-import { configDotenv } from "dotenv";
-import cors from 'cors';
-import allRoutes from "./routes/index.js";
-import {connectDB} from "./config/connectDB.js";
+// ✅ Cloudflare Workers + MongoDB (fixed version)
+import { Hono } from 'hono'
+import { MongoClient } from 'mongodb'
+import jwt from 'jsonwebtoken'
+import allRoutes from './routes/index.js'
 
-configDotenv();
+// ✅ Initialize app (Hono = Express alternative)
+const app = new Hono()
 
-connectDB();
+// ✅ Manual CORS (to replace express + cors)
+app.use('*', async (c, next) => {
+  c.res.headers.set("Access-Control-Allow-Origin", "*")
+  c.res.headers.set("Access-Control-Allow-Methods", "GET, POST, PUT, DELETE, OPTIONS")
+  c.res.headers.set("Access-Control-Allow-Headers", "Content-Type, Authorization")
+  if (c.req.method === "OPTIONS") return c.text("OK", 200)
+  await next()
+})
 
-const app = express();
-const PORT = process.env.PORT;
-
-// middleware
-app.use(express.urlencoded({ extended: true }));
-app.use(cors())
-app.use(express.json());
+// ✅ Simple root route
+app.get('/', (c) => c.text('✅ Server running on Cloudflare Workers!'))
 
 app.use("/api", allRoutes)
 
-// simple route
-app.get("/", (req, res) => {
-  res.send("Server running");
-});
 
-// app.listen(PORT, () => {
-//   console.log(`Server running on http://localhost:${PORT}`);
-// });
-
+// ✅ Export the app (Cloudflare entry point)
 export default app
